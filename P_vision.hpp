@@ -1101,3 +1101,311 @@ for(int r = scan_wight_left;r < scan_wight_right;r++)
 };
 
 
+
+//通用分类器，分离朝向、颜色、端点
+std::string classify_edge(std::string search_path,char gradient,RGB colour,PRO_RGB kind){
+
+
+//朝向分类
+switch(gradient){
+case 0:
+search_path = search_path + "\\0";
+break;
+
+case 1:
+search_path = search_path + "\\1";
+break;
+
+case 2:
+search_path = search_path + "\\2";
+break;
+
+case 3:
+search_path = search_path + "\\3";
+break;
+
+case 4:
+search_path = search_path + "\\4";
+break;
+
+case 5:
+search_path = search_path + "\\5";
+break;
+
+case 6:
+search_path = search_path + "\\6";
+break;
+
+case 7:
+search_path = search_path + "\\7";
+break;
+}
+
+//颜色分类
+char r=colour.r/16;
+switch(r){
+case 0:
+search_path = search_path + "\\0";//0~15
+break;
+case 1:
+search_path = search_path + "\\1";//16~31
+break;
+case 2:
+search_path = search_path + "\\2";//32~47
+break;
+case 3:
+search_path = search_path + "\\3";//48~63
+break;
+case 4:
+search_path = search_path + "\\4";//64~79
+break;
+case 5:
+search_path = search_path + "\\5";//80~95
+break;
+case 6:
+search_path = search_path + "\\6";//96~111
+break;
+case 7:
+search_path = search_path + "\\7";//112~
+break;
+case 8:
+search_path = search_path + "\\8";//128
+break;
+case 9:
+search_path = search_path + "\\9";//144
+break;
+case 10:
+search_path = search_path + "\\a";//160
+break;
+case 11:
+search_path = search_path + "\\b";//176
+break;
+case 12:
+search_path = search_path + "\\c";//192
+break;
+case 13:
+search_path = search_path + "\\d";//208
+break;
+case 14:
+search_path = search_path + "\\e";//224
+break;
+case 15:
+search_path = search_path + "\\f";//240~255
+break;
+
+}
+
+char g=colour.g/16;
+switch(g){
+case 0:
+search_path = search_path + "0";
+break;
+case 1:
+search_path = search_path + "1";
+break;
+case 2:
+search_path = search_path + "2";
+break;
+case 3:
+search_path = search_path + "3";
+break;
+case 4:
+search_path = search_path + "4";
+break;
+case 5:
+search_path = search_path + "5";
+break;
+case 6:
+search_path = search_path + "6";
+break;
+case 7:
+search_path = search_path + "7";
+break;
+case 8:
+search_path = search_path + "8";
+break;
+case 9:
+search_path = search_path + "9";
+break;
+case 10:
+search_path = search_path + "a";
+break;
+case 11:
+search_path = search_path + "b";
+break;
+case 12:
+search_path = search_path + "c";
+break;
+case 13:
+search_path = search_path + "d";
+break;
+case 14:
+search_path = search_path + "e";
+break;
+case 15:
+search_path = search_path + "f";
+break;
+}
+
+char b=colour.b/16;
+switch(b){
+case 0:
+search_path = search_path + "0";
+break;
+case 1:
+search_path = search_path + "1";
+break;
+case 2:
+search_path = search_path + "2";
+break;
+case 3:
+search_path = search_path + "3";
+break;
+case 4:
+search_path = search_path + "4";
+break;
+case 5:
+search_path = search_path + "5";
+break;
+case 6:
+search_path = search_path + "6";
+break;
+case 7:
+search_path = search_path + "7";
+break;
+case 8:
+search_path = search_path + "8";
+break;
+case 9:
+search_path = search_path + "9";
+break;
+case 10:
+search_path = search_path + "a";
+break;
+case 11:
+search_path = search_path + "b";
+break;
+case 12:
+search_path = search_path + "c";
+break;
+case 13:
+search_path = search_path + "d";
+break;
+case 14:
+search_path = search_path + "e";
+break;
+case 15:
+search_path = search_path + "f";
+break;
+
+}
+//分类端点
+if(kind.point_kind >> 0 & 1 == 1)
+search_path = search_path + "\\1";
+else search_path = search_path + "\\0";
+
+if(kind.point_kind >> 1 & 1 == 1)
+search_path = search_path + "1";
+else search_path = search_path + "0";
+
+if(kind.point_kind >> 2 & 1 == 1)
+search_path = search_path + "1";
+else search_path = search_path + "0";
+
+if(kind.point_kind >> 3 & 1 == 1)
+search_path = search_path + "1";
+else search_path = search_path + "0";
+
+if(kind.point_kind >> 4 & 1 == 1)
+search_path = search_path + "1";
+else search_path = search_path + "0";
+
+if(kind.point_kind >> 5 & 1 == 1)
+search_path = search_path + "1";
+else search_path = search_path + "0";
+
+if(kind.point_kind >> 6 & 1 == 1)
+search_path = search_path + "1";
+else search_path = search_path + "0";
+
+if(kind.point_kind >> 7 & 1 == 1)
+search_path = search_path + "1";
+else search_path = search_path + "0";
+
+
+
+return search_path;
+}
+
+
+struct vision_neuro{
+long group;//所属集合序号
+long order;//集合内部序号
+float proportion;//在集合内所占票数比例
+long total_edge_num;//总边缘数
+};//16字节
+
+
+struct total_vote_tree_node{
+long group;//所属集合序号
+float similarity;//相似度汇总，即投票总值
+total_vote_tree_node* last = NULL;
+total_vote_tree_node* next = NULL ;
+vote_tree_inside_node* child_node = NULL;
+};
+
+struct vote_tree_inside_node{
+total_vote_tree_node* root = NULL;
+long order;//集合内部序号
+float proportion;//在集合内所占票数比例
+vote_tree_inside_node* last = NULL;
+vote_tree_inside_node* next = NULL;
+};
+
+
+
+//查询单个点上的聚合结果
+int serach_one(MapRecordTree &MapTree,PRO_RGB kind,RGB colour,int x,int y,int mode){
+
+
+//起始对象，从该点开始的该边是判断起始边
+{std::string search_path_origin = "vision";//起始对象字符串
+
+
+//从确定起始边开始
+search_path_origin = classify_edge(search_path_origin,(*MapTree.to_row[y].to_link[x]).gradient,colour,kind);
+
+
+if(mode = 0)//0是探测直接连接
+{
+std::string search_path_direct = "";
+
+search_path_direct = classify_edge(search_path_origin,(*(MapTree.to_row[y].to_link[x]+1)).gradient,colour,kind);
+
+//相对长度判断，相对长度为起始对象与直连边缘的长度之比
+float relative_length = (*MapTree.to_row[y].to_link[x]).length / (*(MapTree.to_row[y].to_link[x]+1)).length;
+
+//按0.25，0.33，0.5，0.67，1，1.5，2，3的划分，这个根据需求可以修改范围
+search_path_direct;//以下的内容还没写完
+
+std::ifstream file(search_path_direct,std::ios::binary);
+
+std::vector<vision_neuro> vote_list;//这是两条边的对应结果
+
+//需将vote_list的内容放到总投票树
+
+
+
+
+
+}
+
+else//远程连接
+{
+std::string search_path_remote = "";
+}
+
+
+
+
+}
