@@ -1,4 +1,3 @@
-
 //生成边缘图
 __kernel void third_kernel(__global int width,__global int height,
 __global uchar* rgb,__global uchar* detail)
@@ -101,7 +100,7 @@ short r,g,b,r_,g_,b_;
 //2、分离孤立边缘
 int count_down = 0;int count_up = 0;
 
-    if(DETAIL_MAP[(width * y + x)*2 + 1].point_kind = 3)
+    for(char a = 0;DETAIL_MAP[(width * y + x)*2 + 1].point_kind == 3 && a=0;a += 1)
     {
     if(x>0){//左检测
         if(DETAIL_MAP[(width * y + x - 1)*2 + 1].point_kind == 3 && DETAIL_MAP[(width * y + x)*2] >> 0 & 1 != 1) continue;
@@ -176,19 +175,3 @@ if(DETAIL_MAP[(width * y + x)*2 + 1].point_kind = 3){
 
 
 }
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
