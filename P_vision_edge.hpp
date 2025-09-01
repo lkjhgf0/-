@@ -13,7 +13,7 @@ struct PRO_RGB{
     short x;//另一端坐标
     short y;
     char gradient;//方向              转换为方向区间
-    short length;//相对长度
+    short length;//相对距离
     float reward;//强度
     edge_event* ptr = NULL;//指向事件神经元的指针
     };
@@ -23,7 +23,7 @@ struct PRO_RGB{
     short x;//另端坐标
     short y;
     char gradient;//斜率              转换为方向区间
-    short length;//长度
+    short length;//相对长度
     float reward;//奖励
     edge_event* ptr = NULL;//指向事件神经元的指针
     };//19字节
@@ -31,10 +31,10 @@ struct PRO_RGB{
 
     struct y_inside{
 
-    std::vector<x_inside*> to_link;//指向端点的首个连接，每个代表一个x点
-    std::vector<x_outside*> cross_link;//跨格连接
-    std::vector<unsigned char> every_amount_of_link;//每个点的链接数目
-    std::vector<unsigned char> every_amount_of_cross;//每个点的跨格链接数目
+    std::vector<x_inside*> direct_link;//指向端点的首个连接，每个代表一个x点
+    std::vector<x_outside*> remote_link;//远程连接
+    std::vector<unsigned char> every_amount_of_direct;//每个点的链接数目
+    std::vector<unsigned char> every_amount_of_remote;//每个点的远程链接数目
     };
 
 
@@ -54,9 +54,8 @@ struct PRO_RGB{
 
 
 
-struct coordinate{char attribute;//起始0，直线4，斜线2，，前直线6，前斜线7，可能结束点:预备端点5，结束点:端点1
+struct coordinate{char attribute;//起始0，直线4，斜线2，前直线6，前斜线7，可能结束点:预备端点5，结束点:端点1
     int x;int y;//分支点屏幕坐标
 };
-
 
 
