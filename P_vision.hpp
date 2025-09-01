@@ -1070,7 +1070,7 @@ for(int r = scan_wight_left;r < scan_wight_right;r++)
     ray.gradient = direction;
     ray.length = hypotenuse;
     ray.reward = 0;
-    current_MapTree.to_row[scan_y].every_amount_of_cross[scan_x] += 1;
+    current_MapTree.to_row[scan_y].every_amount_of_remote[scan_x] += 1;
     remote_list.push_back(ray);
     x_cross_count += 1;
     if(ray_state == 0)
@@ -1504,7 +1504,7 @@ return 0;
 else//远程连接
 {
 std::string search_path_remote = search_path_origin +"\\remote";
-for(int g = 0;g < MapTree.to_row[y].every_amount_of_cross[x];g++){
+for(int g = 0;g < MapTree.to_row[y].every_amount_of_remote[x];g++){
 
 //方向分类
 switch((*(MapTree.to_row[y].remote_link[x])).gradient){
@@ -1621,3 +1621,15 @@ else{// >=1
 
 
 }
+
+
+
+
+
+//查找较高优先度的概念现象(所得为结果列表)
+
+int serach_block(MapRecordTree &MapTree,int top,int bottom,int left,int right){
+
+;
+}
+
