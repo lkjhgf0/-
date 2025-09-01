@@ -655,7 +655,7 @@ coordinate end_point = current_point_branch[k-1];
 coordinate first_point = current_point_branch[0];
 
 current_MapTree.every_amount_of_X.reserve(current_MapTree.height_y);
-current_MapTree.to_row[first_point.y].every_amount_of_link.reserve(current_MapTree.width_x);
+current_MapTree.to_row[first_point.y].every_amount_of_direct.reserve(current_MapTree.width_x);
 
 
 int all_x = 0;
@@ -880,15 +880,15 @@ if(branch_state == 0) {
 
 point_list.push_back(end_possible_point);
 branch_state = 1;
-current_MapTree.to_row[first_point.y].to_link[first_point.x] = &point_list[x_inside_count];//指针链接首连接
-current_MapTree.to_row[first_point.y].every_amount_of_link[first_point.x] += 1;//该点链接+1
+current_MapTree.to_row[first_point.y].direct_link[first_point.x] = &point_list[x_inside_count];//指针链接首连接
+current_MapTree.to_row[first_point.y].every_amount_of_direct[first_point.x] += 1;//该点链接+1
 current_MapTree.every_amount_of_X[first_point.y] + 1;//该行链接+1
 x_inside_count += 1;}//初始化
 
 if(branch_state == 2){
 point_list.push_back(end_possible_point);//由于设计，同点的新线不能赋予在首个指针上
 branch_state = 3;
-current_MapTree.to_row[first_point.y].every_amount_of_link[first_point.x] += 1;
+current_MapTree.to_row[first_point.y].every_amount_of_direct[first_point.x] += 1;
 current_MapTree.every_amount_of_X[first_point.y] + 1;
 x_inside_count += 1;
 
@@ -896,7 +896,7 @@ x_inside_count += 1;
 //合并操作
 if(branch_state ==1 || branch_state ==3){
 //branch_state,0未生成，1已有的比对，2已有的新建
-if(reward >= (*current_MapTree.to_row[first_point.y].to_link[first_point.x]).reward * (k/point_list[x_inside_count].length)*0.9)
+if(reward >= (*current_MapTree.to_row[first_point.y].direct_link[first_point.x]).reward * (k/point_list[x_inside_count].length)*0.9)
 {point_list[x_inside_count].x = end_point.x;
 point_list[x_inside_count].y = end_point.y;
 point_list[x_inside_count].gradient = gradient;
@@ -961,18 +961,18 @@ current_point_branch.clear();
 
 
 //以下 远程连接的建立
-std::vector<x_outside> cross_list;
+std::vector<x_outside> remote_list;
 int x_cross_count =0;
-cross_list.reserve(4096000);
+remote_list.reserve(4096000);
 for(int scan_y=0;scan_y < originalIMAGE.height;scan_y += 1){
 
     for(int scan_x=0;scan_x < originalIMAGE.width;scan_x += 1){
 
 if(DETAIL_MAP[originalIMAGE.width * scan_y + scan_x].point_kind = 1){//通过条件：是端点
-int line_number = current_MapTree.to_row[scan_y].every_amount_of_link[scan_x];//连线数量
+int line_number = current_MapTree.to_row[scan_y].every_amount_of_direct[scan_x];//连线数量
 int distance = 0;//
 for(int k= 0;k < line_number;k++){
-distance += (*(current_MapTree.to_row[scan_y].to_link[scan_x] + k*14)).length;
+distance += (*(current_MapTree.to_row[scan_y].direct_link[scan_x] + k*14)).length;
 }
 distance = distance/line_number;//平均距离
 
@@ -1071,10 +1071,10 @@ for(int r = scan_wight_left;r < scan_wight_right;r++)
     ray.length = hypotenuse;
     ray.reward = 0;
     current_MapTree.to_row[scan_y].every_amount_of_cross[scan_x] += 1;
-    cross_list.push_back(ray);
+    remote_list.push_back(ray);
     x_cross_count += 1;
     if(ray_state == 0)
-    current_MapTree.to_row[scan_y].cross_link[scan_x] = &cross_list[x_cross_count];//远程指针链接首连接
+    current_MapTree.to_row[scan_y].remote_link[scan_x] = &remote_list[x_cross_count];//远程指针链接首连接
 
     ray_state = 1;
 };
@@ -1093,8 +1093,6 @@ for(int r = scan_wight_left;r < scan_wight_right;r++)
 
 
 
-
-
     Cleanup(context, commandQueue, program, kernel, memObjects);
  
     return 0;
@@ -1102,8 +1100,44 @@ for(int r = scan_wight_left;r < scan_wight_right;r++)
 
 
 
+
+
 //通用分类器，分离朝向、颜色、端点
-std::string classify_edge(std::string search_path,char gradient,RGB colour,PRO_RGB kind){
+std::string classify_edge(std::string search_path,char gradient,RGB colour,unsigned char kind){
+
+
+//分类端点
+if(kind >> 0 & 1 == 1)
+search_path = search_path + "\\1";
+else search_path = search_path + "\\0";
+
+if(kind >> 1 & 1 == 1)
+search_path = search_path + "1";
+else search_path = search_path + "0";
+
+if(kind >> 2 & 1 == 1)
+search_path = search_path + "1";
+else search_path = search_path + "0";
+
+if(kind >> 3 & 1 == 1)
+search_path = search_path + "1";
+else search_path = search_path + "0";
+
+if(kind >> 4 & 1 == 1)
+search_path = search_path + "1";
+else search_path = search_path + "0";
+
+if(kind >> 5 & 1 == 1)
+search_path = search_path + "1";
+else search_path = search_path + "0";
+
+if(kind >> 6 & 1 == 1)
+search_path = search_path + "1";
+else search_path = search_path + "0";
+
+if(kind >> 7 & 1 == 1)
+search_path = search_path + "1";
+else search_path = search_path + "0";
 
 
 //朝向分类
@@ -1299,38 +1333,7 @@ search_path = search_path + "f";
 break;
 
 }
-//分类端点
-if(kind.point_kind >> 0 & 1 == 1)
-search_path = search_path + "\\1";
-else search_path = search_path + "\\0";
 
-if(kind.point_kind >> 1 & 1 == 1)
-search_path = search_path + "1";
-else search_path = search_path + "0";
-
-if(kind.point_kind >> 2 & 1 == 1)
-search_path = search_path + "1";
-else search_path = search_path + "0";
-
-if(kind.point_kind >> 3 & 1 == 1)
-search_path = search_path + "1";
-else search_path = search_path + "0";
-
-if(kind.point_kind >> 4 & 1 == 1)
-search_path = search_path + "1";
-else search_path = search_path + "0";
-
-if(kind.point_kind >> 5 & 1 == 1)
-search_path = search_path + "1";
-else search_path = search_path + "0";
-
-if(kind.point_kind >> 6 & 1 == 1)
-search_path = search_path + "1";
-else search_path = search_path + "0";
-
-if(kind.point_kind >> 7 & 1 == 1)
-search_path = search_path + "1";
-else search_path = search_path + "0";
 
 
 
@@ -1365,47 +1368,256 @@ vote_tree_inside_node* next = NULL;
 
 
 //查询单个点上的聚合结果
-int serach_one(MapRecordTree &MapTree,PRO_RGB kind,RGB colour,int x,int y,int mode){
+int serach_one(MapRecordTree &MapTree,std::vector<PRO_RGB> &DETAIL_MAP,std::vector<RGB> &rgbmap,
+   int x,int y,int width,int mode){
 
 
 //起始对象，从该点开始的该边是判断起始边
-{std::string search_path_origin = "vision";//起始对象字符串
+std::string search_path_origin = "vision";//起始对象字符串
 
 
 //从确定起始边开始
-search_path_origin = classify_edge(search_path_origin,(*MapTree.to_row[y].to_link[x]).gradient,colour,kind);
+search_path_origin = classify_edge(search_path_origin,(*MapTree.to_row[y].direct_link[x]).gradient,
+rgbmap[width * y + x],DETAIL_MAP[width * y + x].edge_Kind);
+
+//加入相连边
+for(char i = 1;i < MapTree.to_row[y].every_amount_of_direct[x];i++){
+
+search_path_origin = search_path_origin + "\\direct";
+
+//朝向分类
+switch((*(MapTree.to_row[y].direct_link[x] + i)).gradient){
+case 0:
+search_path_origin = search_path_origin + "\\0";
+break;
+
+case 1:
+search_path_origin = search_path_origin + "\\1";
+break;
+
+case 2:
+search_path_origin = search_path_origin + "\\2";
+break;
+
+case 3:
+search_path_origin = search_path_origin + "\\3";
+break;
+
+case 4:
+search_path_origin = search_path_origin + "\\4";
+break;
+
+case 5:
+search_path_origin = search_path_origin + "\\5";
+break;
+
+case 6:
+search_path_origin = search_path_origin + "\\6";
+break;
+
+case 7:
+search_path_origin = search_path_origin + "\\7";
+break;
+}
+//相对长度判断
+//按0.25，0.33，0.5，0.67，1，1.5，2，3，4的范围划分，这个根据实际需求可以修改机制
+float relative_length = (*MapTree.to_row[y].direct_link[x]).length / (*(MapTree.to_row[y].direct_link[x] + i)).length;
+if(relative_length < 1){
+    if(relative_length < 0.5){
+        if(relative_length < 0.25) search_path_origin = search_path_origin + "\\0.25-";
+        else if(relative_length < 0.33) search_path_origin = search_path_origin + "\\0.25_0.33";
+        else search_path_origin = search_path_origin + "\\0.33_0.5";}
+    else{
+        if(relative_length < 0.67) search_path_origin = search_path_origin + "\\0.5_0.67";
+        else search_path_origin = search_path_origin + "\\0.67_1";
+    }
+}
+else{// >=1
+    if(relative_length < 3){
+        if(relative_length < 1.5) search_path_origin = search_path_origin + "\\1_1.5";
+        else if (relative_length < 2)search_path_origin = search_path_origin + "\\1.5_2";
+        else search_path_origin = search_path_origin + "\\2_3";}
+    else{
+        if(relative_length < 4) search_path_origin = search_path_origin + "\\3_4";
+        else search_path_origin = search_path_origin + "\\4+";
+    }
+}
+
+
+}//循环内
 
 
 if(mode = 0)//0是探测直接连接
 {
+
 std::string search_path_direct = "";
 
-search_path_direct = classify_edge(search_path_origin,(*(MapTree.to_row[y].to_link[x]+1)).gradient,colour,kind);
+for(char n = 1;n < MapTree.to_row[y].every_amount_of_direct[x];n++){
+
+search_path_direct = classify_edge(search_path_origin,
+    (*(MapTree.to_row[(*MapTree.to_row[y].direct_link[x]).y].direct_link[(*MapTree.to_row[y].direct_link[x]).x])).gradient,
+    rgbmap[width * (*MapTree.to_row[y].direct_link[x]).y + (*MapTree.to_row[y].direct_link[x]).x],
+    DETAIL_MAP[width * (*MapTree.to_row[y].direct_link[x]).y + (*MapTree.to_row[y].direct_link[x]).x].edge_Kind);
 
 //相对长度判断，相对长度为起始对象与直连边缘的长度之比
-float relative_length = (*MapTree.to_row[y].to_link[x]).length / (*(MapTree.to_row[y].to_link[x]+1)).length;
+float relative_length = (*MapTree.to_row[y].direct_link[x]).length / (*(MapTree.to_row[(*MapTree.to_row[y].direct_link[x]).y].direct_link[(*MapTree.to_row[y].direct_link[x]).x] + n)).length;
+if(relative_length < 1){
+    if(relative_length < 0.5){
+        if(relative_length < 0.25) search_path_origin = search_path_origin + "\\0.25-";
+        else if(relative_length < 0.33) search_path_origin = search_path_origin + "\\0.25_0.33";
+        else search_path_origin = search_path_origin + "\\0.33_0.5";}
+    else{
+        if(relative_length < 0.67) search_path_origin = search_path_origin + "\\0.5_0.67";
+        else search_path_origin = search_path_origin + "\\0.67_1";
+    }
+}
+else{// >=1
+    if(relative_length < 3){
+        if(relative_length < 1.5) search_path_origin = search_path_origin + "\\1_1.5";
+        else if (relative_length < 2)search_path_origin = search_path_origin + "\\1.5_2";
+        else search_path_origin = search_path_origin + "\\2_3";}
+    else{
+        if(relative_length < 4) search_path_origin = search_path_origin + "\\3_4";
+        else search_path_origin = search_path_origin + "\\4+";
+    }
+}
 
-//按0.25，0.33，0.5，0.67，1，1.5，2，3的划分，这个根据需求可以修改范围
+
+
 search_path_direct;//以下的内容还没写完
 
 std::ifstream file(search_path_direct,std::ios::binary);
 
+
+
+
+
+
 std::vector<vision_neuro> vote_list;//这是两条边的对应结果
 
-//需将vote_list的内容放到总投票树
+//需将vote_list的内容汇总到总投票树
 
 
-
-
-
+return 0;
 }
-
+}
 else//远程连接
 {
-std::string search_path_remote = "";
+std::string search_path_remote = search_path_origin +"\\remote";
+for(int g = 0;g < MapTree.to_row[y].every_amount_of_cross[x];g++){
+
+//方向分类
+switch((*(MapTree.to_row[y].remote_link[x])).gradient){
+case 0:
+search_path_remote = search_path_remote + "\\0";
+break;
+
+case 1:
+search_path_remote = search_path_remote + "\\1";
+break;
+
+case 2:
+search_path_remote = search_path_remote + "\\2";
+break;
+
+case 3:
+search_path_remote = search_path_remote + "\\3";
+break;
+
+case 4:
+search_path_remote = search_path_remote + "\\4";
+break;
+
+case 5:
+search_path_remote = search_path_remote + "\\5";
+break;
+
+case 6:
+search_path_remote = search_path_remote + "\\6";
+break;
+
+case 7:
+search_path_remote = search_path_remote + "\\7";
+break;
 }
 
 
+search_path_remote = classify_edge(search_path_remote,
+    (*(MapTree.to_row[y].remote_link[x] + g)).gradient,
+    rgbmap[width * (*MapTree.to_row[y].remote_link[x]).y + (*MapTree.to_row[y].remote_link[x]).x],
+    DETAIL_MAP[width * (*MapTree.to_row[y].remote_link[x]).y + (*MapTree.to_row[y].remote_link[x]).x].edge_Kind);
+
+
+for(char k = 0;k<MapTree.to_row[y].every_amount_of_direct[x];k++){
+
+//朝向分类
+switch((*(MapTree.to_row[y].direct_link[x] + k)).gradient){
+case 0:
+search_path_origin = search_path_origin + "\\0";
+break;
+
+case 1:
+search_path_origin = search_path_origin + "\\1";
+break;
+
+case 2:
+search_path_origin = search_path_origin + "\\2";
+break;
+
+case 3:
+search_path_origin = search_path_origin + "\\3";
+break;
+
+case 4:
+search_path_origin = search_path_origin + "\\4";
+break;
+
+case 5:
+search_path_origin = search_path_origin + "\\5";
+break;
+
+case 6:
+search_path_origin = search_path_origin + "\\6";
+break;
+
+case 7:
+search_path_origin = search_path_origin + "\\7";
+break;
+}
+
+
+//相对长度
+float relative_length = (*MapTree.to_row[y].direct_link[x]).length / (*(MapTree.to_row[(*MapTree.to_row[y].remote_link[x]).y].direct_link[(*MapTree.to_row[y].remote_link[x]).x] + k)).length;
+if(relative_length < 1){
+    if(relative_length < 0.5){
+        if(relative_length < 0.25) search_path_origin = search_path_origin + "\\0.25-";
+        else if(relative_length < 0.33) search_path_origin = search_path_origin + "\\0.25_0.33";
+        else search_path_origin = search_path_origin + "\\0.33_0.5";}
+    else{
+        if(relative_length < 0.67) search_path_origin = search_path_origin + "\\0.5_0.67";
+        else search_path_origin = search_path_origin + "\\0.67_1";
+    }
+}
+else{// >=1
+    if(relative_length < 3){
+        if(relative_length < 1.5) search_path_origin = search_path_origin + "\\1_1.5";
+        else if (relative_length < 2)search_path_origin = search_path_origin + "\\1.5_2";
+        else search_path_origin = search_path_origin + "\\2_3";}
+    else{
+        if(relative_length < 4) search_path_origin = search_path_origin + "\\3_4";
+        else search_path_origin = search_path_origin + "\\4+";
+    }
+}
+
+//汇总远距离端点的投票结果
+
+}
+
+
+}
+
+
+}
 
 
 }
