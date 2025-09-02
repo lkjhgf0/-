@@ -1341,7 +1341,7 @@ return search_path;
 }
 
 
-struct vision_neuro{
+struct vision_neuro_node{
 long group;//所属集合序号
 long order;//集合内部序号
 float proportion;//在集合内所占票数比例
@@ -1365,7 +1365,8 @@ vote_tree_inside_node* last = NULL;
 vote_tree_inside_node* next = NULL;
 };
 
-
+std::vector<total_vote_tree_node> total_vote_tree;
+std::vector<vote_tree_inside_node> vote_tree_inside;
 
 //查询单个点上的聚合结果
 int serach_one(MapRecordTree &MapTree,std::vector<PRO_RGB> &DETAIL_MAP,std::vector<RGB> &rgbmap,
@@ -1445,7 +1446,8 @@ else{// >=1
 
 
 }//循环内
-
+long node_count = 0;
+std::vector<vision_neuro_node> vote_list(node_count);
 
 if(mode = 0)//0是探测直接连接
 {
@@ -1484,22 +1486,89 @@ else{// >=1
 
 
 
-search_path_direct;//以下的内容还没写完
+    std::ifstream infile(search_path_direct, std::ios::binary);
+    if (!infile) {
+        std::cerr << "文件打开失败！" << std::endl;
+        return 1;
+    }
 
-std::ifstream file(search_path_direct,std::ios::binary);
+    // 读取文件的数量信息
+    
+    infile.read(reinterpret_cast<char*>(&node_count), sizeof(long));
+    if (!infile) {
+        std::cerr << "读取节点数目统计失败！" << std::endl;
+        return 1;
+    }
 
+    
 
+    // 读取所有节点
+    infile.read(reinterpret_cast<char*>(vote_list.data()), node_count * sizeof(vision_neuro_node));
+    if (!infile) {
+        std::cerr << "读取节点内容失败！" << std::endl;
+        return 1;
+    }
 
+    infile.close();
 
+//将vote_list的内容汇总到总投票树
 
+// 汇总
 
-std::vector<vision_neuro> vote_list;//这是两条边的对应结果
+    // 1. 分组： group -> 节点列表
+    std::unordered_map<long, std::vector<const vision_neuro_node*>> group_map;
+    for (const auto& node : vote_list) {
+        group_map[node.group].push_back(&node);
+    }
 
-//需将vote_list的内容汇总到总投票树
+    // 2. 遍历分组，生成 total_vote_tree_node
 
+    total_vote_tree_node* prev_group = nullptr;
+    for (auto& [group_id, nodes] : group_map) {
+        // 新建一个 group 汇总节点
+        total_vote_tree.emplace_back();
+        auto* group_node = &total_vote_tree.back();
+        group_node->group = group_id;
+        group_node->similarity = 0.0f;
 
-return 0;
+        // 处理 group 内部元素
+        vote_tree_inside_node* prev_inside = nullptr;
+        for (auto* vn : nodes) {
+            vote_tree_inside.emplace_back();
+            auto* inside_node = &vote_tree_inside.back();
+            inside_node->root = group_node;
+            inside_node->order = vn->order;
+            inside_node->proportion = vn->proportion;
+
+            // 累计相似度
+            group_node->similarity += vn->proportion;
+
+            // 建立组内链表
+            if (!group_node->child_node) {
+                group_node->child_node = inside_node;
+            }
+            if (prev_inside) {
+                prev_inside->next = inside_node;
+                inside_node->last = prev_inside;
+            }
+            prev_inside = inside_node;
+        }
+
+        // 建立组间链表
+        if (prev_group) {
+            prev_group->next = group_node;
+            group_node->last = prev_group;
+        }
+        prev_group = group_node;
+    
+    
 }
+    
+
+vote_list.clear();
+return 2;
+}
+
 }
 else//远程连接
 {
@@ -1553,35 +1622,35 @@ for(char k = 0;k<MapTree.to_row[y].every_amount_of_direct[x];k++){
 //朝向分类
 switch((*(MapTree.to_row[y].direct_link[x] + k)).gradient){
 case 0:
-search_path_origin = search_path_origin + "\\0";
+search_path_remote = search_path_remote + "\\0";
 break;
 
 case 1:
-search_path_origin = search_path_origin + "\\1";
+search_path_remote = search_path_remote + "\\1";
 break;
 
 case 2:
-search_path_origin = search_path_origin + "\\2";
+search_path_remote = search_path_remote + "\\2";
 break;
 
 case 3:
-search_path_origin = search_path_origin + "\\3";
+search_path_remote = search_path_remote + "\\3";
 break;
 
 case 4:
-search_path_origin = search_path_origin + "\\4";
+search_path_remote = search_path_remote + "\\4";
 break;
 
 case 5:
-search_path_origin = search_path_origin + "\\5";
+search_path_remote = search_path_remote + "\\5";
 break;
 
 case 6:
-search_path_origin = search_path_origin + "\\6";
+search_path_remote = search_path_remote + "\\6";
 break;
 
 case 7:
-search_path_origin = search_path_origin + "\\7";
+search_path_remote = search_path_remote + "\\7";
 break;
 }
 
@@ -1590,45 +1659,170 @@ break;
 float relative_length = (*MapTree.to_row[y].direct_link[x]).length / (*(MapTree.to_row[(*MapTree.to_row[y].remote_link[x]).y].direct_link[(*MapTree.to_row[y].remote_link[x]).x] + k)).length;
 if(relative_length < 1){
     if(relative_length < 0.5){
-        if(relative_length < 0.25) search_path_origin = search_path_origin + "\\0.25-";
-        else if(relative_length < 0.33) search_path_origin = search_path_origin + "\\0.25_0.33";
-        else search_path_origin = search_path_origin + "\\0.33_0.5";}
+        if(relative_length < 0.25) search_path_remote = search_path_remote + "\\0.25-";
+        else if(relative_length < 0.33) search_path_remote = search_path_remote + "\\0.25_0.33";
+        else search_path_remote = search_path_remote + "\\0.33_0.5";}
     else{
-        if(relative_length < 0.67) search_path_origin = search_path_origin + "\\0.5_0.67";
-        else search_path_origin = search_path_origin + "\\0.67_1";
+        if(relative_length < 0.67) search_path_remote = search_path_remote + "\\0.5_0.67";
+        else search_path_remote = search_path_remote + "\\0.67_1";
     }
 }
 else{// >=1
     if(relative_length < 3){
-        if(relative_length < 1.5) search_path_origin = search_path_origin + "\\1_1.5";
-        else if (relative_length < 2)search_path_origin = search_path_origin + "\\1.5_2";
-        else search_path_origin = search_path_origin + "\\2_3";}
+        if(relative_length < 1.5) search_path_remote = search_path_remote + "\\1_1.5";
+        else if (relative_length < 2)search_path_remote = search_path_remote + "\\1.5_2";
+        else search_path_remote = search_path_remote + "\\2_3";}
     else{
-        if(relative_length < 4) search_path_origin = search_path_origin + "\\3_4";
-        else search_path_origin = search_path_origin + "\\4+";
+        if(relative_length < 4) search_path_remote = search_path_remote + "\\3_4";
+        else search_path_remote = search_path_remote + "\\4+";
     }
 }
 
+
+    std::ifstream infile(search_path_remote, std::ios::binary);
+    if (!infile) {
+        std::cerr << "文件打开失败！" << std::endl;
+        return 1;
+    }
+
+    // 读取文件的数量信息
+    
+    infile.read(reinterpret_cast<char*>(&node_count), sizeof(long));
+    if (!infile) {
+        std::cerr << "读取节点数目统计失败！" << std::endl;
+        return 1;
+    }
+
+    
+    // 读取所有节点
+    infile.read(reinterpret_cast<char*>(vote_list.data()), node_count * sizeof(vision_neuro_node));
+    if (!infile) {
+        std::cerr << "读取节点内容失败！" << std::endl;
+        return 1;
+    }
+
+    infile.close();
+
 //汇总远距离端点的投票结果
 
+    // 1. 分组： group -> 节点列表
+    std::unordered_map<long, std::vector<const vision_neuro_node*>> group_map;
+    for (const auto& node : vote_list) {
+        group_map[node.group].push_back(&node);
+    }
+
+    // 2. 遍历分组，生成 total_vote_tree_node
+
+    total_vote_tree_node* prev_group = nullptr;
+    for (auto& [group_id, nodes] : group_map) {
+        // 新建一个 group 汇总节点
+        total_vote_tree.emplace_back();
+        auto* group_node = &total_vote_tree.back();
+        group_node->group = group_id;
+        group_node->similarity = 0.0f;
+
+        // 处理 group 内部元素
+        vote_tree_inside_node* prev_inside = nullptr;
+        for (auto* vn : nodes) {
+            vote_tree_inside.emplace_back();
+            auto* inside_node = &vote_tree_inside.back();
+            inside_node->root = group_node;
+            inside_node->order = vn->order;
+            inside_node->proportion = vn->proportion;
+
+            // 累计相似度
+            group_node->similarity += vn->proportion;
+
+            // 建立组内链表
+            if (!group_node->child_node) {
+                group_node->child_node = inside_node;
+            }
+            if (prev_inside) {
+                prev_inside->next = inside_node;
+                inside_node->last = prev_inside;
+            }
+            prev_inside = inside_node;
+        }
+
+        // 建立组间链表
+        if (prev_group) {
+            prev_group->next = group_node;
+            group_node->last = prev_group;
+        }
+        prev_group = group_node;
+    
+    
+}
+}
+
+}
+vote_list.clear();
+return 3;
 }
 
 
 }
 
 
+// 返回 similarity 最大的前 n 个 group_id
+std::vector<long> top_n_group_ids(
+    std::vector<total_vote_tree_node>& total_vote_tree,
+    size_t n
+) {
+    // 临时存储指针
+    std::vector<total_vote_tree_node*> nodes;
+    nodes.reserve(total_vote_tree.size());
+
+    for (auto& node : total_vote_tree) {
+        nodes.push_back(&node);
+    }
+
+    if (n > nodes.size()) n = nodes.size();
+
+    // 部分排序，取前 n 个 similarity 最大的
+    std::partial_sort(
+        nodes.begin(),
+        nodes.begin() + n,
+        nodes.end(),
+        [](const total_vote_tree_node* a, const total_vote_tree_node* b) {
+            return a->similarity > b->similarity; // 降序
+        }
+    );
+
+    // 取出 group_id
+    std::vector<long> result;
+    result.reserve(n);
+    for (size_t i = 0; i < n; i++) {
+        result.push_back(nodes[i]->group);
+    }
+
+    return result;
 }
 
 
+// 返回 similarity ≥ m 的 group_id 列表，以及数量
+std::pair<std::vector<long>, size_t> groups_with_min_similarity(
+    const std::vector<total_vote_tree_node>& total_vote_tree,
+    float m
+) {
+    std::vector<long> result;
+
+    for (const auto& node : total_vote_tree) {
+        if (node.similarity >= m) {
+            result.push_back(node.group);
+        }
+    }
+
+    return {result, result.size()};
 }
-
-
-
-
 
 //查找较高优先度的概念现象(所得为结果列表)
+std::vector<long> serach_block(MapRecordTree &MapTree,int top,int bottom,int left,int right){
 
-int serach_block(MapRecordTree &MapTree,int top,int bottom,int left,int right){
+
+
+
+
 
 ;
 }
