@@ -974,7 +974,7 @@ int distance = 0;//
 for(int k= 0;k < line_number;k++){
 distance += (*(current_MapTree.to_row[scan_y].direct_link[scan_x] + k*14)).length;
 }
-distance = distance/line_number;//平均距离
+distance = distance/line_number;//平均长度
 
 
 //扫描范围矫准
@@ -1060,8 +1060,8 @@ for(int r = scan_wight_left;r < scan_wight_right;r++)
 
 
 
-    //统计距离
-    float hypotenuse = sqrt((scan_y - k)*(scan_y - k) + (scan_x - r)*(scan_x - r))/distance;
+    //统计相对距离
+    float hypotenuse = sqrt((scan_y - k)*(scan_y - k) + (scan_x - r)*(scan_x - r))/distance;//实际距离/平均长度
 
     //数据载入
     x_outside ray;
@@ -1484,12 +1484,12 @@ else{// >=1
     }
 }
 
-
+search_path_direct = search_path_direct +"\\0-100.v";//0-100是优先度的范围
 
     std::ifstream infile(search_path_direct, std::ios::binary);
     if (!infile) {
-        std::cerr << "文件打开失败！" << std::endl;
-        return 1;
+        std::cerr << "文件打开失败！路径不存在" << std::endl;
+        return 1;//1是待更新
     }
 
     // 读取文件的数量信息
@@ -1497,7 +1497,7 @@ else{// >=1
     infile.read(reinterpret_cast<char*>(&node_count), sizeof(long));
     if (!infile) {
         std::cerr << "读取节点数目统计失败！" << std::endl;
-        return 1;
+        return 0;
     }
 
     
@@ -1506,7 +1506,7 @@ else{// >=1
     infile.read(reinterpret_cast<char*>(vote_list.data()), node_count * sizeof(vision_neuro_node));
     if (!infile) {
         std::cerr << "读取节点内容失败！" << std::endl;
-        return 1;
+        return 0;
     }
 
     infile.close();
@@ -1572,6 +1572,8 @@ return 2;
 }
 else//远程连接
 {
+    for(int b =0;b <MapTree.to_row[y].every_amount_of_remote[x];b++){
+
 std::string search_path_remote = search_path_origin +"\\remote";
 for(int g = 0;g < MapTree.to_row[y].every_amount_of_remote[x];g++){
 
@@ -1610,6 +1612,29 @@ search_path_remote = search_path_remote + "\\7";
 break;
 }
 
+
+//相对距离分类
+float relative_distance = (*(MapTree.to_row[y].remote_link[x]+b)).length;
+if(relative_distance < 1){
+    if(relative_distance < 0.5){
+        if(relative_distance < 0.1) search_path_remote = search_path_remote + "\\0.1-";
+        else if(relative_distance < 0.2) search_path_remote = search_path_remote + "\\0.1_0.2";
+        else search_path_remote = search_path_remote + "\\0.2_0.3";}
+    else{
+        if(relative_distance < 0.4) search_path_remote = search_path_remote + "\\0.3_0.4";
+        else search_path_remote = search_path_remote + "\\0.4_0.5";
+    }
+}
+else{// >=0.5
+    if(relative_distance < 0.8){
+        if(relative_distance < 0.6) search_path_remote = search_path_remote + "\\0.5_0.6";
+        else if (relative_distance < 0.7)search_path_remote = search_path_remote + "\\0.6_0.7";
+        else search_path_remote = search_path_remote + "\\0.7_0.8";}
+    else{
+        if(relative_distance < 0.9) search_path_remote = search_path_remote + "\\0.8_0.9";
+        else search_path_remote = search_path_remote + "\\0.9+";
+    }
+}
 
 search_path_remote = classify_edge(search_path_remote,
     (*(MapTree.to_row[y].remote_link[x] + g)).gradient,
@@ -1678,6 +1703,7 @@ else{// >=1
     }
 }
 
+search_path_remote = search_path_remote +"\\0-100.v";
 
     std::ifstream infile(search_path_remote, std::ios::binary);
     if (!infile) {
@@ -1756,11 +1782,12 @@ else{// >=1
 }
 
 }
+
 vote_list.clear();
 return 3;
 }
 
-
+   }
 }
 
 
@@ -1827,3 +1854,84 @@ std::vector<long> serach_block(MapRecordTree &MapTree,int top,int bottom,int lef
 ;
 }
 
+struct link_record_objedt{
+short x;
+short y;
+short targrt_x;
+short targrt_y;
+};
+
+
+
+//视觉数据库生成
+long vision_group_number = 0;
+//集合号码取用与更新
+long get_group_newest(){
+    std::ifstream ifile("Vision_Group.n",std::ios::binary);
+    ifile.read(reinterpret_cast< char*>(vision_group_number), 4);
+    ifile.close();
+    long number = vision_group_number;
+    vision_group_number += 1;
+    std::ofstream ofile("Vision_Group.n",std::ios::binary);
+    ofile.write(reinterpret_cast<char*>(vision_group_number), 4);
+    ofile.close();
+    return number;
+}
+
+//将视觉特征(边缘)制作成集合
+void vision_group_record(MapRecordTree &MapTree,std::vector<std::string> path,
+    std::vector<bool> mode,std::vector<link_record_objedt> read_list){
+long group = get_group_newest();
+int total_edge_num = path.size();
+int order = 0;
+int edge_grid = 0;
+std::vector<int> single_proportion;
+for(int d = 0;d < total_edge_num;d++){//统计总票数
+
+//连接原对象的占比统计
+for(char t = 0;t < MapTree.to_row[read_list[order].y].every_amount_of_direct[read_list[order].x];t++){
+    int f = (MapTree.to_row[read_list[order].y].direct_link[read_list[order].x] + t)->length;
+    edge_grid += f;single_proportion[order] += f;
+}
+//连接目标对象的占比统计
+for(char e = 0;e < MapTree.to_row[read_list[order].targrt_y].every_amount_of_direct[read_list[order].targrt_x];e++){
+    int f = (MapTree.to_row[read_list[order].targrt_y].direct_link[read_list[order].targrt_x] + e)->length;
+    edge_grid += f;single_proportion[order] += f;
+}
+
+order += 1;
+}//求解得知edge_grid总数
+
+
+
+for(order = 0;order < total_edge_num;order += 1){
+
+std::ifstream ifile(path[order],std::ios::binary);
+if(!ifile.good()){
+std::ofstream ofile(path[order],std::ios::binary);
+long num = 0;
+ofile.write(reinterpret_cast<char*>(num), sizeof(long));
+ofile.close();
+}
+int group_num;
+std::vector<vision_neuro_node> node;
+ifile.read(reinterpret_cast<char*>(group_num), sizeof(long));
+node.reserve(group_num + total_edge_num);
+ifile.read(reinterpret_cast<char*>(node.data()), group_num * sizeof(vision_neuro_node));
+
+
+vision_neuro_node l;
+l.group = group;
+l.order = order;
+l.proportion = single_proportion[order]/edge_grid;
+l.total_edge_num = total_edge_num;
+
+node.push_back(l);
+
+std::ofstream ofile(path[order],std::ios::binary);
+ofile.write(reinterpret_cast<char*>(node.data()), sizeof(node));
+ofile.close();
+
+
+}
+};
