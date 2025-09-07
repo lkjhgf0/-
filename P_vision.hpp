@@ -1342,7 +1342,7 @@ return search_path;
 
 
 struct vision_neuro_node{
-long group;//所属集合序号
+unsigned long group;//所属集合序号
 long order;//集合内部序号
 float proportion;//在集合内所占票数比例
 long total_edge_num;//总边缘数
@@ -1880,8 +1880,8 @@ long get_group_newest(){
 
 //将视觉特征(边缘)制作成集合
 void vision_group_record(MapRecordTree &MapTree,std::vector<std::string> path,
-    std::vector<bool> mode,std::vector<link_record_objedt> read_list){
-long group = get_group_newest();
+    std::vector<link_record_objedt> read_list,std::vector<group_inside_data> group_inside){
+unsigned long group = get_group_newest();
 int total_edge_num = path.size();
 int order = 0;
 int edge_grid = 0;
@@ -1934,4 +1934,67 @@ ofile.close();
 
 
 }
+
+//开始集合数据库的写入
+std::string group_path = "vision_group";
+group_path += VariableToPath(group);
+std::string group_path_1 += ".n";//记录序号、占比
+std::string group_path_2 += ".b";//记录每段边缘的路径所占字节，方便读取
+std::string group_path_3 += ".p";//记录集合内边缘的路径
+std::ofstream ofile(group_path_1,std::ios::binary);
+std::ofstream record_num(group_path_2,std::ios::binary);
+std::ofstream record_path(group_path_3,std::ios::binary);
+ofile.write(reinterpret_cast<char*>(total_edge_num), sizeof(long));
+ofile.write(reinterpret_cast<char*>(group_inside.data()), total_edge_num * sizeof(vision_neuro_node));
+//写入检索路径
+std::vector<char> path_num_record;
+for(int y = 0;y < total_edge_num;y++){
+path_num_record.push_back(sizeof(path[y]))
+}
+record_num.write(reinterpret_cast<char*>(path_num_record.data()),sizeof(path_num_record));
+record_path.write(reinterpret_cast<char*>(path.data()),sizeof(path));
+ofile.close();
+record_num.close();
+record_path.close();
+return;
 };
+
+struct group_inside_data
+{long order;//集合内部序号
+float proportion;//在集合内所占票数比例
+}
+
+//unsigned long类型的量转化成路径
+std::string VariableToPath(unsjgned long num){
+
+unsigned char pathname[4]={0,0,0,0};
+pathname[0] = static_cast<unsigned char>((num >> 24) & 0xFF);
+pathname[1] = static_cast<unsigned char>((num >> 16) & 0xFF);
+pathname[2] = static_cast<unsigned char>((num >> 8) & 0xFF);
+pathname[3] = static_cast<unsigned char>(num & 0xFF);
+
+//目录名生成
+std::string dir1 = byteToHex(pathname[0]);
+std::string dir2 = byteToHex(pathname[1]);
+std::string dir3 = byteToHex(pathname[2]);
+std::string dir4 = byteToHex(pathname[3]);
+
+// 构建目录路径
+std::string directory;
+directory = dir1 + "\\" + dir2 + "\\" + dir3 + "\\" + dir4;
+
+// 返回完整路径
+return directory;
+}
+
+//纯粹度计算
+float purity_calculate(long group,float integrity,//integrity是票数的总和，是完整度，决定了纯粹度的上限
+int length//集合内边的长度总和
+,int other//非集合边的长度总和
+)
+{
+
+float purity =integrity*(length/(length + other));
+return purity;
+
+}
