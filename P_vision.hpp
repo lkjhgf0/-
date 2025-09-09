@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <CL/cl.h>
+#include <CL/cl.h>//这个是opencl的头文件，下载很简单
 #include <algorithm>
 #include <cmath>
 
@@ -1384,7 +1384,7 @@ rgbmap[width * y + x],DETAIL_MAP[width * y + x].edge_Kind);
 //加入相连边
 for(char i = 1;i < MapTree.to_row[y].every_amount_of_direct[x];i++){
 
-search_path_origin = search_path_origin + "\\direct";
+
 
 //朝向分类
 switch((*(MapTree.to_row[y].direct_link[x] + i)).gradient){
@@ -1452,7 +1452,7 @@ std::vector<vision_neuro_node> vote_list(node_count);
 if(mode = 0)//0是探测直接连接
 {
 
-std::string search_path_direct = "";
+std::string search_path_direct = search_path_direct + "\\direct";
 
 for(char n = 1;n < MapTree.to_row[y].every_amount_of_direct[x];n++){
 
@@ -1484,7 +1484,7 @@ else{// >=1
     }
 }
 
-search_path_direct = search_path_direct +"\\0-100.v";//0-100是优先度的范围
+search_path_direct = search_path_direct +"\\0-100.v";//0-100是优先度的范围，这个机制还没做
 
     std::ifstream infile(search_path_direct, std::ios::binary);
     if (!infile) {
@@ -1936,11 +1936,11 @@ ofile.close();
 }
 
 //开始集合数据库的写入
-std::string group_path = "vision_group";
-group_path += VariableToPath(group);
-std::string group_path_1 += ".n";//记录序号、占比
-std::string group_path_2 += ".b";//记录每段边缘的路径所占字节，方便读取
-std::string group_path_3 += ".p";//记录集合内边缘的路径
+std::string group_path = "vision_group\\";
+group_path = group_path + VariableToPath(group);
+std::string group_path_1 = group_path + ".n";//记录序号、占比
+std::string group_path_2 = group_path + ".b";//记录每段边缘的路径所占字节，方便读取
+std::string group_path_3 = group_path + ".p";//记录集合内边缘的路径
 std::ofstream ofile(group_path_1,std::ios::binary);
 std::ofstream record_num(group_path_2,std::ios::binary);
 std::ofstream record_path(group_path_3,std::ios::binary);
@@ -1949,23 +1949,33 @@ ofile.write(reinterpret_cast<char*>(group_inside.data()), total_edge_num * sizeo
 //写入检索路径
 std::vector<char> path_num_record;
 for(int y = 0;y < total_edge_num;y++){
-path_num_record.push_back(sizeof(path[y]))
+path_num_record.push_back(sizeof(path[y]));
 }
 record_num.write(reinterpret_cast<char*>(path_num_record.data()),sizeof(path_num_record));
 record_path.write(reinterpret_cast<char*>(path.data()),sizeof(path));
 ofile.close();
 record_num.close();
 record_path.close();
+//再将每个点的边连接写入位置分布表中，位置分布表用来记录空间数据
+
+
+
+
+
 return;
 };
 
 struct group_inside_data
-{long order;//集合内部序号
+{unsigned long order;//集合内部序号
 float proportion;//在集合内所占票数比例
-}
+unsigned short f_identifer;//第一个点在位置分布表的编号
+unsigned short s_identifer;//第二条点在位置分布表的编号
+};
+
+
 
 //unsigned long类型的量转化成路径
-std::string VariableToPath(unsjgned long num){
+std::string VariableToPath(unsigned long num){
 
 unsigned char pathname[4]={0,0,0,0};
 pathname[0] = static_cast<unsigned char>((num >> 24) & 0xFF);
